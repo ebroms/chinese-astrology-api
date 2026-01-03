@@ -2,7 +2,6 @@ import express from "express";
 import pkg from "iztro";
 const { Iztro } = pkg;
 
-
 const app = express();
 app.use(express.json());
 
@@ -12,22 +11,24 @@ app.post("/api/chinese_chart", async (req, res) => {
     const { year, month, day, hour, minute, gender } = req.body;
 
     if (!year || !month || !day || hour === undefined || !gender) {
-      return res.status(400).json({ error: "Missing required fields: year, month, day, hour, gender." });
+      return res.status(400).json({
+        error: "Missing required fields: year, month, day, hour, gender."
+      });
     }
 
     // Create an Iztro instance
     const chart = new Iztro({
       date: new Date(year, month - 1, day, hour, minute || 0),
-      gender: gender.toLowerCase() === "male" ? 1 : 0,
+      gender: gender.toLowerCase() === "male" ? 1 : 0
     });
 
-    const bazi = chart.getBaZi();
-    const ziwei = chart.getZiWei();
+    // Get BaZi and Ziwei chart data
+    const bazi = chart.bazi();   // updated to lowercase method name
+    const ziwei = chart.ziwei(); // updated to lowercase method name
 
-    res.json({
-      bazi,
-      ziwei,
-    });
+    // Send result
+    res.json({ bazi, ziwei });
+
   } catch (err) {
     console.error("Error generating chart:", err);
     res.status(500).json({ error: "Chart generation failed." });
@@ -41,3 +42,4 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✨ Chinese Astrology API running on port ${PORT}`));
+
