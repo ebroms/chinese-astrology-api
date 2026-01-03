@@ -1,5 +1,7 @@
 import express from "express";
-import { Iztro } from "iztro";
+import pkg from "iztro";
+const { Iztro } = pkg;
+
 
 const app = express();
 app.use(express.json());
