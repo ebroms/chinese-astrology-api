@@ -1,5 +1,5 @@
 import express from "express";
-import iztro from "iztro";
+import * as iztro from "iztro";     // import every export as an object
 
 const app = express();
 app.use(express.json());
@@ -7,40 +7,39 @@ app.use(express.json());
 app.post("/api/chinese_chart", async (req, res) => {
   try {
     const { year, month, day, hour, minute, gender } = req.body;
+    console.log("📅 Incoming birth data:", req.body);
+    console.log("🔍 iztro type:", typeof iztro);
+    console.log("🔍 iztro keys:", Object.keys(iztro));
 
-    if (!year || !month || !day || hour === undefined || !gender) {
-      return res.status(400).json({
-        error: "Missing required fields: year, month, day, hour, gender."
-      });
+    // see which of these exist
+    const ctor =
+      iztro.Iztro ||
+      iztro.default ||
+      iztro.iztro ||
+      iztro.BaZi ||
+      iztro.ZiWei;
+
+    if (!ctor) {
+      throw new Error(
+        "Cannot find a callable constructor/function in iztro export"
+      );
     }
 
-    console.log("📅 Incoming birth data:", req.body);
+    console.log("🪶 Using key:", Object.keys(iztro).find(k => iztro[k] === ctor));
 
-    // call iztro as a function instead of using 'new'
-    const chart = iztro({
+    const chart = new ctor({
       date: new Date(year, month - 1, day, hour, minute || 0),
-      gender: gender.toLowerCase() === "male" ? 1 : 0
+      gender: gender.toLowerCase() === "male" ? 1 : 0,
     });
 
-    console.log("🪶 Chart created successfully");
+    console.log("✅ Chart instance created");
 
-    // Attempt both lowercase and legacy method names
     let bazi, ziwei;
-    if (typeof chart.bazi === "function") {
-      bazi = chart.bazi();
-    } else if (typeof chart.getBaZi === "function") {
-      bazi = chart.getBaZi();
-    }
+    if (typeof chart.bazi === "function") bazi = chart.bazi();
+    else if (typeof chart.getBaZi === "function") bazi = chart.getBaZi();
 
-    if (typeof chart.ziwei === "function") {
-      ziwei = chart.ziwei();
-    } else if (typeof chart.getZiWei === "function") {
-      ziwei = chart.getZiWei();
-    }
-
-    if (!bazi && !ziwei) {
-      throw new Error("Chart data unavailable; library did not return values.");
-    }
+    if (typeof chart.ziwei === "function") ziwei = chart.ziwei();
+    else if (typeof chart.getZiWei === "function") ziwei = chart.getZiWei();
 
     res.json({ bazi, ziwei });
   } catch (err) {
