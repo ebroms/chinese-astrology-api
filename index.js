@@ -1,6 +1,5 @@
 import express from "express";
-import pkg from "iztro";
-const { Iztro } = pkg;
+import iztro from "iztro"; // import default instead of destructuring
 
 const app = express();
 app.use(express.json());
@@ -18,17 +17,14 @@ app.post("/api/chinese_chart", async (req, res) => {
     console.log("📅 Incoming birth data:", req.body);
 
     // Construct the chart safely
-    const chart = new Iztro({
+    const chart = new iztro({
       date: new Date(year, month - 1, day, hour, minute || 0),
       gender: gender.toLowerCase() === "male" ? 1 : 0
     });
 
     console.log("🪶 Chart object created successfully");
 
-    // Check available methods on chart for debugging
-    console.log("🔍 Available methods:", Object.keys(chart));
-
-    // Try each method safely
+    // Call whatever methods exist on this object
     let bazi, ziwei;
     try {
       if (typeof chart.bazi === "function") {
