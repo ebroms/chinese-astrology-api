@@ -5,7 +5,6 @@ const { Iztro } = pkg;
 const app = express();
 app.use(express.json());
 
-// POST endpoint for BaZi + Ziwei chart
 app.post("/api/chinese_chart", async (req, res) => {
   try {
     const { year, month, day, hour, minute, gender } = req.body;
@@ -16,30 +15,56 @@ app.post("/api/chinese_chart", async (req, res) => {
       });
     }
 
-    // Create an Iztro instance
+    console.log("📅 Incoming birth data:", req.body);
+
+    // Construct the chart safely
     const chart = new Iztro({
       date: new Date(year, month - 1, day, hour, minute || 0),
       gender: gender.toLowerCase() === "male" ? 1 : 0
     });
 
-    // Get BaZi and Ziwei chart data
-    const bazi = chart.bazi();   // updated to lowercase method name
-    const ziwei = chart.ziwei(); // updated to lowercase method name
+    console.log("🪶 Chart object created successfully");
 
-    // Send result
+    // Check available methods on chart for debugging
+    console.log("🔍 Available methods:", Object.keys(chart));
+
+    // Try each method safely
+    let bazi, ziwei;
+    try {
+      if (typeof chart.bazi === "function") {
+        bazi = chart.bazi();
+      } else if (typeof chart.getBaZi === "function") {
+        bazi = chart.getBaZi();
+      }
+    } catch (err) {
+      console.error("Error generating BaZi:", err);
+    }
+
+    try {
+      if (typeof chart.ziwei === "function") {
+        ziwei = chart.ziwei();
+      } else if (typeof chart.getZiWei === "function") {
+        ziwei = chart.getZiWei();
+      }
+    } catch (err) {
+      console.error("Error generating Ziwei:", err);
+    }
+
+    if (!bazi && !ziwei) {
+      throw new Error("Both BaZi and Ziwei chart generation returned null/undefined");
+    }
+
     res.json({ bazi, ziwei });
 
   } catch (err) {
-    console.error("Error generating chart:", err);
+    console.error("🔥 Full error details:", err);
     res.status(500).json({ error: "Chart generation failed." });
   }
 });
 
-// Root endpoint
 app.get("/", (req, res) => {
   res.send("🪶 Chinese Astrology API is alive. Use POST /api/chinese_chart to generate charts.");
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✨ Chinese Astrology API running on port ${PORT}`));
-
