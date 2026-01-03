@@ -1,5 +1,5 @@
 import express from "express";
-import * as iztro from "iztro";     // import every export as an object
+import * as iztro from "iztro"; // we now know it's an object with modules
 
 const app = express();
 app.use(express.json());
@@ -7,39 +7,29 @@ app.use(express.json());
 app.post("/api/chinese_chart", async (req, res) => {
   try {
     const { year, month, day, hour, minute, gender } = req.body;
-    console.log("📅 Incoming birth data:", req.body);
-    console.log("🔍 iztro type:", typeof iztro);
-    console.log("🔍 iztro keys:", Object.keys(iztro));
 
-    // see which of these exist
-    const ctor =
-      iztro.Iztro ||
-      iztro.default ||
-      iztro.iztro ||
-      iztro.BaZi ||
-      iztro.ZiWei;
-
-    if (!ctor) {
-      throw new Error(
-        "Cannot find a callable constructor/function in iztro export"
-      );
+    if (!year || !month || !day || hour === undefined || !gender) {
+      return res.status(400).json({
+        error: "Missing required fields: year, month, day, hour, gender."
+      });
     }
 
-    console.log("🪶 Using key:", Object.keys(iztro).find(k => iztro[k] === ctor));
+    console.log("📅 Incoming birth data:", req.body);
 
-    const chart = new ctor({
-      date: new Date(year, month - 1, day, hour, minute || 0),
-      gender: gender.toLowerCase() === "male" ? 1 : 0,
-    });
+    // build the date object
+    const date = new Date(year, month - 1, day, hour, minute || 0);
+    const sex = gender.toLowerCase() === "male" ? 1 : 0;
 
-    console.log("✅ Chart instance created");
+    // Directly call iztro's astro methods
+    if (!iztro.astro || typeof iztro.astro.bazi !== "function") {
+      throw new Error("iztro.astro.bazi function not found");
+    }
 
-    let bazi, ziwei;
-    if (typeof chart.bazi === "function") bazi = chart.bazi();
-    else if (typeof chart.getBaZi === "function") bazi = chart.getBaZi();
+    // Calculate BaZi and Ziwei charts
+    const bazi = iztro.astro.bazi({ date, gender: sex });
+    const ziwei = iztro.astro.ziwei({ date, gender: sex });
 
-    if (typeof chart.ziwei === "function") ziwei = chart.ziwei();
-    else if (typeof chart.getZiWei === "function") ziwei = chart.getZiWei();
+    console.log("✅ Chart data generated successfully");
 
     res.json({ bazi, ziwei });
   } catch (err) {
