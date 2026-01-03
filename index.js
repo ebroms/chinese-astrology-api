@@ -1,5 +1,5 @@
 import express from "express";
-import iztro from "iztro"; // import default instead of destructuring
+import iztro from "iztro";
 
 const app = express();
 app.use(express.json());
@@ -16,42 +16,33 @@ app.post("/api/chinese_chart", async (req, res) => {
 
     console.log("📅 Incoming birth data:", req.body);
 
-    // Construct the chart safely
-    const chart = new iztro({
+    // call iztro as a function instead of using 'new'
+    const chart = iztro({
       date: new Date(year, month - 1, day, hour, minute || 0),
       gender: gender.toLowerCase() === "male" ? 1 : 0
     });
 
-    console.log("🪶 Chart object created successfully");
+    console.log("🪶 Chart created successfully");
 
-    // Call whatever methods exist on this object
+    // Attempt both lowercase and legacy method names
     let bazi, ziwei;
-    try {
-      if (typeof chart.bazi === "function") {
-        bazi = chart.bazi();
-      } else if (typeof chart.getBaZi === "function") {
-        bazi = chart.getBaZi();
-      }
-    } catch (err) {
-      console.error("Error generating BaZi:", err);
+    if (typeof chart.bazi === "function") {
+      bazi = chart.bazi();
+    } else if (typeof chart.getBaZi === "function") {
+      bazi = chart.getBaZi();
     }
 
-    try {
-      if (typeof chart.ziwei === "function") {
-        ziwei = chart.ziwei();
-      } else if (typeof chart.getZiWei === "function") {
-        ziwei = chart.getZiWei();
-      }
-    } catch (err) {
-      console.error("Error generating Ziwei:", err);
+    if (typeof chart.ziwei === "function") {
+      ziwei = chart.ziwei();
+    } else if (typeof chart.getZiWei === "function") {
+      ziwei = chart.getZiWei();
     }
 
     if (!bazi && !ziwei) {
-      throw new Error("Both BaZi and Ziwei chart generation returned null/undefined");
+      throw new Error("Chart data unavailable; library did not return values.");
     }
 
     res.json({ bazi, ziwei });
-
   } catch (err) {
     console.error("🔥 Full error details:", err);
     res.status(500).json({ error: "Chart generation failed." });
